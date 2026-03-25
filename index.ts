@@ -259,6 +259,7 @@ class App extends LitElement {
     @state()
     error?: string;
 
+    @state()
     url: string | null = null;
 
     @state()
@@ -274,24 +275,38 @@ class App extends LitElement {
     @state()
     copiedCode = false;
 
+    @state()
     viewType: ViewType = "tree";
 
     @property()
     embed = false;
 
+    @property()
+    local = false;
+
     constructor() {
         super();
-        this.url = new URL(location.href).searchParams.get("url");
-        this.viewType = new URL(location.href).searchParams.get("viewtype") as ViewType;
+        this.decodeURL();
+    }
+
+    protected decodeURL(): void {
+        let searchParams = this.local
+            ? new URLSearchParams(location.hash.substring(1))
+            : new URL(location.href).searchParams;
+        this.url = searchParams.get("url");
+        this.viewType = searchParams.get("viewtype") as ViewType;
         if (!this.viewType) this.viewType = "tree";
     }
 
-    firstUpdate = true;
-    protected willUpdate(_changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {
-        if (this.firstUpdate) {
-            if (this.embed) this.viewType = "embed";
+    protected willUpdate(changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void {
+        if (changedProperties.has("local") && this.local) {
+            addEventListener("hashchange", (_event) => { this.decodeURL() });
+            this.decodeURL();
+        }
+        if (this.embed) this.viewType = "embed";
+        if (changedProperties.has("url")) {
+            this.thread = null;
             if (this.url) this.load();
-            this.firstUpdate = false;
         }
     }
 
@@ -499,13 +514,20 @@ style=&quot;border: none; outline: none; width: 400px; height: 600px&quot;
         </main>`;
     }
 
+    setParams(url: string, viewType: ViewType) {
+        const searchParams = new URLSearchParams();
+        searchParams.set("url", url);
+        searchParams.set("viewtype", viewType);
+        if (this.local)
+            location.hash = "#" + searchParams.toString();
+        else
+            location.searchParams = searchParams;
+    }
+
     viewPosts() {
         if (!this.urlElement) return;
 
-        const newUrl = new URL(location.href);
-        newUrl.searchParams.set("url", this.urlElement.value);
-        newUrl.searchParams.set("viewtype", "tree");
-        location.href = newUrl.href;
+        this.setParams(this.urlElement.value, "tree");
     }
 
     changeView() {
@@ -513,10 +535,7 @@ style=&quot;border: none; outline: none; width: 400px; height: 600px&quot;
         if (!el) return;
         if (!this.url) return;
 
-        const newUrl = new URL(location.href);
-        newUrl.searchParams.set("url", this.url!);
-        newUrl.searchParams.set("viewtype", el.selectedValue);
-        location.href = newUrl.href;
+        this.setParams(this.url!, el.selectedValue);
     }
 
     defaultAvatar = svg`<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="none" data-testid="userAvatarFallback"><circle cx="12" cy="12" r="12" fill="#0070ff"></circle><circle cx="12" cy="9.5" r="3.5" fill="#fff"></circle><path stroke-linecap="round" stroke-linejoin="round" fill="#fff" d="M 12.058 22.784 C 9.422 22.784 7.007 21.836 5.137 20.262 C 5.667 17.988 8.534 16.25 11.99 16.25 C 15.494 16.25 18.391 18.036 18.864 20.357 C 17.01 21.874 14.64 22.784 12.058 22.784 Z"></path></svg>`;
