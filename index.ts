@@ -348,7 +348,7 @@ class App extends LitElement {
                                 >
                                     <pre>
 &lt;iframe
-src=&quot;${location.protocol}//${location.host}/embed.html?url=${this.url}&quot;
+src=&quot;${new URL('embed.html',location.href).href}?url=${this.url}&quot;
 style=&quot;border: none; outline: none; width: 400px; height: 600px&quot;
 &gt;&lt;/iframe&gt;</pre
                                     >
@@ -356,7 +356,7 @@ style=&quot;border: none; outline: none; width: 400px; height: 600px&quot;
                                         class="text-white bg-primary px-4 py-2 mt-2 rounded"
                                         @click=${() =>
                                             this.copyToClipboard(
-                                                `<iframe src="${location.protocol}//${location.host}/embed.html?url=${this.url}" style="border: none; outline: none; width: 400px; height: 600px;"></iframe>`,
+                                                `<iframe src="${new URL('embed.html',location.href).href}?url=${this.url}" style="border: none; outline: none; width: 400px; height: 600px;"></iframe>`,
                                                 "code"
                                             )}
                                     >
@@ -465,7 +465,7 @@ style=&quot;border: none; outline: none; width: 400px; height: 600px&quot;
                         essentially what Skyview does. Without needing a BlueSky account. Here is the
                         <a
                             class="text-primary"
-                            href="/?url=https%3A%2F%2Fbsky.app%2Fprofile%2Fbadlogic.bsky.social%2Fpost%2F3kbt22jdyuw2l"
+                            href="./?url=https%3A%2F%2Fbsky.app%2Fprofile%2Fbadlogic.bsky.social%2Fpost%2F3kbt22jdyuw2l"
                             target="_blank"
                             >same post viewed via Skyview</a
                         >.
@@ -480,7 +480,7 @@ style=&quot;border: none; outline: none; width: 400px; height: 600px&quot;
 
         return html`<main class="flex flex-col justify-between m-auto max-w-[728px] px-4 h-full">
             ${!this.embed || this.loading
-                ? html`<a class="text-2xl flex align-center justify-center text-primary font-bold text-center my-8" href="/"
+                ? html`<a class="text-2xl flex align-center justify-center text-primary font-bold text-center my-8" href="."
                       ><i class="w-[32px] h-[32px] inline-block fill-primary">${unsafeHTML(logoSvg)}</i><span class="ml-2">Skyview</span></a
                   >
                   <span class="text-sm text-center mb-12">Entertained? Consider donating to our <a class="text-primary" target="_blank" href="https://bsky.app/profile/badlogic.bsky.social/post/3lazjayqwfk2q">🇺🇦 charity</a></span>
@@ -492,7 +492,7 @@ style=&quot;border: none; outline: none; width: 400px; height: 600px&quot;
                 <a class="text-primary" href="https://bsky.app/profile/badlogic.bsky.social" target="_blank">Mario Zechner</a><br />
                 Kindly supported by <a class="text-primary" class="https://mediamask.io/">Mediamask</a>, the most amazing template engine for image
                 generation<br />
-                Logo by <a href="marknzeichn.at" class="text-primary">Jan Hax</a><br />
+                Logo by <a href="https://marknzeichn.com/" class="text-primary">Jan Hax</a><br />
                 No data is collected, not even your IP address.<br />
                 <a class="text-primary" href="https://github.com/badlogic/skyview" target="_blank">Source code</a>
             </div>
