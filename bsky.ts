@@ -164,6 +164,48 @@ export async function collectFullThread(postUri: string) {
     };
 }
 
+export function applyViewType(thread: BskyThreadPost, viewType: ViewType): BskyThreadPost {
+    if (viewType == "embed") {
+        if (thread.post.record.text.includes("@skyview.social") && thread.post.record.text.includes("embed") && thread.parent) {
+            thread = thread.parent;
+        }
+        thread = { ...thread, replies: [] };
+    }
+
+    if (viewType == "unroll") {
+        const posts: BskyThreadPost[] = [];
+        posts.push(thread);
+        while (true) {
+            const post = posts[posts.length - 1];
+            if (post.replies) {
+                var replies = post.replies.slice();
+                replies.sort((a, b) => a.post.record.createdAt.localeCompare(b.post.record.createdAt));
+                const next = replies.find(
+                    (reply) =>
+                    reply.post.author.did == post.post.author.did &&
+                        !reply.post.record.text.includes("@skyview.social") &&
+                        !reply.post.record.text.includes("unroll")
+                );
+                if (!next) break;
+                posts.push(next);
+            } else {
+                break;
+            }
+        }
+        thread = { ...thread };
+        thread.replies = posts.length > 1 ? posts.slice(1, posts.length) : [];
+        thread.replies = thread.replies.map((reply) => ({ ...reply, replies: [] }));
+        if (thread.replies.length > 0) {
+            const lastPost = thread.replies[thread.replies.length - 1];
+            if (lastPost.post.record.text.includes("@skyview.social") && lastPost.post.record.text.includes("unroll")) {
+                thread.replies.pop();
+            }
+        }
+    }
+
+    return thread;
+}
+
 export async function loadThread(url: string, viewType: ViewType): Promise<{ thread: BskyThreadPost; originalUri: string | undefined } | string> {
     try {
         const tokens = url.replace("https://", "").split("/");
@@ -194,42 +236,8 @@ export async function loadThread(url: string, viewType: ViewType): Promise<{ thr
         if (!thread) {
             return "Sorry, couldn't load thread (invalid thread)";
         }
-        if (viewType == "embed") {
-            if (thread.post.record.text.includes("@skyview.social") && thread.post.record.text.includes("embed") && thread.parent) {
-                thread = thread.parent;
-            }
-            thread.replies = [];
-        }
 
-        if (viewType == "unroll") {
-            const posts: BskyThreadPost[] = [];
-            posts.push(thread);
-            while (true) {
-                const post = posts[posts.length - 1];
-                if (post.replies) {
-                    post.replies.sort((a, b) => a.post.record.createdAt.localeCompare(b.post.record.createdAt));
-                    const next = post.replies.find(
-                        (reply) =>
-                            reply.post.author.did == post.post.author.did &&
-                            !reply.post.record.text.includes("@skyview.social") &&
-                            !reply.post.record.text.includes("unroll")
-                    );
-                    if (!next) break;
-                    posts.push(next);
-                } else {
-                    break;
-                }
-            }
-            thread.replies = posts.length > 1 ? posts.slice(1, posts.length) : [];
-            thread.replies.forEach((reply) => (reply.replies = []));
-            if (thread.replies.length > 0) {
-                const lastPost = thread.replies[thread.replies.length - 1];
-                if (lastPost.post.record.text.includes("@skyview.social") && lastPost.post.record.text.includes("unroll")) {
-                    thread.replies.pop();
-                }
-            }
-        }
-
+        thread = applyViewType(thread, viewType);
         return { thread, originalUri };
     } catch (e) {
         return `Sorry, couldn't load thread (exception) ${(e as any).message ? "\n" + (e as any).message : ""}`;

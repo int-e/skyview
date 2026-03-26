@@ -202,7 +202,7 @@ const contentLoader = html`<div class="flex space-x-4 animate-pulse w-[80%] max-
 import sunIconSvg from "remixicon/icons/Weather/sun-line.svg";
 // @ts-ignore
 import moonIconSvg from "remixicon/icons/Weather/moon-line.svg";
-import { BskyAuthor, BskyExternalCard, BskyImage, BskyRecord, BskyThreadPost, ViewType, loadThread, processText } from "./bsky";
+import { BskyAuthor, BskyExternalCard, BskyImage, BskyRecord, BskyThreadPost, ViewType, loadThread, applyViewType, processText } from "./bsky";
 
 function icon(svg: string) {
     return html`<i class="flex w-[1.2m] h-[1.2em] border-white fill-primary">${unsafeHTML(svg)}</i>`;
@@ -267,6 +267,7 @@ class App extends LitElement {
 
     @state()
     thread?: BskyThreadPost;
+    threadTree?: BskyThreadPost;
     originalUri?: string;
 
     @state()
@@ -305,8 +306,13 @@ class App extends LitElement {
         }
         if (this.embed) this.viewType = "embed";
         if (changedProperties.has("url")) {
-            this.thread = null;
+            this.error = undefined;
+            this.thread = undefined;
+            this.threadTree = undefined;
             if (this.url) this.load();
+        }
+        if (changedProperties.has("viewType") && this.threadTree) {
+            this.thread = applyViewType(this.threadTree, this.viewType);
         }
     }
 
@@ -323,11 +329,12 @@ class App extends LitElement {
         this.loading = true;
         this.originalUri = undefined;
         try {
-            const result = await loadThread(this.url, this.viewType);
+            const result = await loadThread(this.url, "tree");
             if (typeof result == "string") {
                 this.error = result;
             } else {
-                this.thread = result.thread;
+                this.threadTree = result.thread;
+                this.thread = applyViewType(this.threadTree, this.viewType);
                 this.originalUri = result.originalUri;
             }
         } catch (e) {
